@@ -1,0 +1,9 @@
+# folders
+.mvn/
+# files
+.DS_Store
+# folders
+docs/
+# files
+terraform.tfvars
+terraform.tfstate
