@@ -1,75 +1,64 @@
-package com.citt.persistence.services;
+package com.citt.service;
 
-import com.citt.exceptions.VentaNotFoundException;
 import com.citt.persistence.entity.Venta;
 import com.citt.persistence.repository.VentaRepository;
+import com.citt.exceptions.VentaNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
-public class VentaServiceImpl implements VentaService{
+public class VentaServiceImpl implements VentaService {
 
     @Autowired
     private VentaRepository ventaRepository;
 
     @Override
-    public List<Venta> findAllVentas() {
-        return ventaRepository.findAll();
-    }
-
-    @Override
-    public Venta saveVenta(Venta venta) {
+    public Venta createVenta(Venta venta) {
         return ventaRepository.save(venta);
     }
 
     @Override
-    public Venta updateVenta(Long idVenta, Venta venta) throws VentaNotFoundException {
-        Optional<Venta> optionalVenta = ventaRepository.findById(idVenta);
-
-        if (optionalVenta.isPresent()) {
-            Venta ventaDB = optionalVenta.get();
-
-            if (Objects.nonNull(venta.getDireccionCompra()) && !venta.getDireccionCompra().trim().isEmpty()) {
-                ventaDB.setDireccionCompra(venta.getDireccionCompra());
-            }
-
-            if (Objects.nonNull(venta.getValorCompra())) {
-                ventaDB.setValorCompra(venta.getValorCompra());
-            }
-
-            if (Objects.nonNull(venta.getFechaCompra())) {
-                ventaDB.setFechaCompra(venta.getFechaCompra());
-            }
-
-            if (Objects.nonNull(venta.getDespachoGenerado())) {
-                ventaDB.setDespachoGenerado(venta.getDespachoGenerado());
-            }
-
-            // Guardar la venta actualizada en la BD
-            return ventaRepository.save(ventaDB);
-        } else {
-            throw new VentaNotFoundException("!No es posible actualizar! No existe venta con ID: " + idVenta);
-        }
+    public List<Venta> getAllVentas() {
+        return ventaRepository.findAll();
     }
 
     @Override
-    public void deleteVenta(Long idVenta) throws VentaNotFoundException {
-        Optional<Venta> venta = ventaRepository.findById(idVenta);
-        if(!venta.isPresent()) {
-            throw new VentaNotFoundException("¡No es posible eliminar! No existe venta con el ID: " + idVenta);
-        }else {
-            ventaRepository.deleteById(idVenta);
-        }
+    public Venta getVentaById(Long id) {
+        return ventaRepository.findById(id)
+                .orElseThrow(() -> new VentaNotFoundException("Venta no encontrada con id: " + id));
     }
 
     @Override
-    public Venta findById(Long idVenta) throws VentaNotFoundException {
-        Optional<Venta> venta = ventaRepository.findById(idVenta);
-        if(!venta.isPresent()) throw new VentaNotFoundException("Venta no encontrada con el ID: " + idVenta);
-        return venta.get();
+    public Venta updateVenta(Long id, Venta venta) {
+        Venta ventaExistente = getVentaById(id);
+
+        if (Objects.nonNull(venta.getDireccionCompra()) && !"".equalsIgnoreCase(venta.getDireccionCompra())) {
+            ventaExistente.setDireccionCompra(venta.getDireccionCompra());
+        }
+
+        if (Objects.nonNull(venta.getFechaCompra())) {
+            ventaExistente.setFechaCompra(venta.getFechaCompra());
+        }
+
+        if (Objects.nonNull(venta.getDespachoGenerado())) {
+            ventaExistente.setDespachoGenerado(venta.getDespachoGenerado());
+        }
+
+        // Corrección 4.8: Al ser Integer, Objects.nonNull() ahora sí valida correctamente
+        // si el usuario mandó explícitamente un 0 o si no mandó nada (null).
+        if (Objects.nonNull(venta.getValorCompra())) {
+            ventaExistente.setValorCompra(venta.getValorCompra());
+        }
+
+        return ventaRepository.save(ventaExistente);
+    }
+
+    @Override
+    public void deleteVenta(Long id) {
+        Venta venta = getVentaById(id);
+        ventaRepository.delete(venta);
     }
 }
