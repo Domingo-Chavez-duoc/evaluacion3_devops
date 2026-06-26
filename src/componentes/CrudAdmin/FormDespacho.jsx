@@ -1,120 +1,77 @@
-import { useForm } from "react-hook-form";
-import Swal from "sweetalert2";
-import axios from "axios";
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 export const FormDespacho = ({ venta, onClose }) => {
   const { register, handleSubmit } = useForm();
 
   const onSubmit = async (data) => {
-    console.log("onSubmit ejecutado");
-    const jsonData = {
-      fechaDespacho: data.fechaDespacho,
-      patenteCamion: data.patenteCamion,
-      intento: 0,
-      entregado: false,
-      idCompra: venta.idVenta,
-      direccionCompra: venta.direccionCompra,
-      valorCompra: venta.valorCompra,
-    };
-
-    const jsonDataSales = {
-      despachoGenerado: true,
-    };
-
-    console.log("Datos del formulario:", jsonData);
-
     try {
-      await axios.put(
-        `http://192.168.30/api/v1/ventas/${venta.idVenta}`,
-        jsonDataSales,
-        {
-          headers:{
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-      }
-        }
-      );
-      await axios.post("http://192.168.320/api/v1/despachos", jsonData, {
-        headers:{
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-    }
+      // Corrección 4.1: Uso de variables de entorno
+      // 1. Marcar despachoGenerado: true en la API de Ventas
+      await axios.put(`${import.meta.env.VITE_API_VENTAS}/${venta.id}`, {
+        ...venta,
+        despachoGenerado: true
       });
-      Swal.fire({
-        title: "Despacho registrado 🛻!",
-        text: "El despacho ha sido generado con éxito en la base de datos",
-        icon: "success",
-        confirmButtonText: "Aceptar",
-      });
-    } catch (error) {
-      console.error("Error en la solicitud:", error);
-    }
-    onClose();
-  };
-  return (
-    <>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col justify-center text-center px-24 text-xl"
-      >
-        <div className="mx-auto text-3xl font-bold mb-10 text-teal-600">
-          Ingreso de orden de despacho
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Fecha de despacho</label>
-          <input
-            type="date"
-            placeholder="Ingresa fecha de despacho"
-            className="border border-gray-300 rounded-lg block w-full p-1"
-            {...register("fechaDespacho", { required: true })}
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Patente de camión</label>
-          <input
-            type="text"
-            placeholder="Elige patente de camión"
-            className="border border-gray-300 rounded-lg block w-full p-1"
-            {...register("patenteCamion", { required: true })}
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">
-            Orden de compra asociado
-          </label>
-          <input
-            type="number"
-            disabled={true}
-            value={venta.idVenta}
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Dirección de entrega</label>
-          <input
-            type="text"
-            disabled={true}
-            value={venta.direccionCompra}
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Valor de compra</label>
-          <input
-            type="number"
-            value={venta.valorCompra}
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-            disabled={true}
-          />
-        </div>
 
+      // Corrección 4.5: unificar el campo usando 'despachado' en vez de 'entregado'
+      const nuevoDespacho = {
+        idVenta: venta.id,
+        direccion: venta.direccionCompra,
+        despachado: false, 
+        intento: 1,
+        ...data
+      };
+
+      await axios.post(`${import.meta.env.VITE_API_DESPACHOS}`, nuevoDespacho);
+
+      Swal.fire({
+        title: '¡Éxito!',
+        text: 'Despacho generado correctamente.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar'
+      });
+
+      onClose();
+    } catch (error) {
+      console.error("Error al generar despacho:", error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Hubo un problema al procesar el despacho.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <h3 className="text-lg font-bold text-gray-900">Generar Despacho para Venta #{venta.id}</h3>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Dirección de Envío</label>
+        <input
+          type="text"
+          disabled
+          defaultValue={venta.direccionCompra}
+          className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded p-2 text-gray-600"
+        />
+      </div>
+      <div className="flex justify-end space-x-2 pt-2">
         <button
-          className="py-6 px-14 rounded-lg bg-teal-600 text-white font-bold mb-14"
-          type="submit"
+          type="button"
+          onClick={onClose}
+          className="bg-gray-300 px-4 py-2 rounded text-gray-700 hover:bg-gray-400 transition-colors"
         >
-          Asignar despacho
+          Cancelar
         </button>
-      </form>
-    </>
+        <button
+          type="submit"
+          className="bg-green-600 px-4 py-2 rounded text-white hover:bg-green-700 transition-colors"
+        >
+          Confirmar Despacho
+        </button>
+      </div>
+    </form>
   );
 };

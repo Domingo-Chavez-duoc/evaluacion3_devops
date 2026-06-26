@@ -1,100 +1,83 @@
-import { useState, useEffect } from "react";
-import { Modal } from "./Modal";
-import { FormDespacho } from "./FormDespacho";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { FormDespacho } from './FormDespacho'; 
 
 export const TableCompras = () => {
   const [ventas, setVentas] = useState([]);
+  const [selectedVenta, setSelectedVenta] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const compras = async () => {
-    await axios.get("http://192.168.30/api/v1/ventas", {
-      headers:{
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-  }
-    }).then((response) => {
-      console.log(response.data);
-      setVentas(response.data);
-    });
+  const fetchVentas = async () => {
+    try {
+      // Corrección 4.1: Uso de variable de entorno
+      const response = await axios.get(`${import.meta.env.VITE_API_VENTAS}`);
+      // Filtrar las ventas que no tienen despacho generado
+      const filtradas = response.data.filter(v => !v.despachoGenerado);
+      setVentas(filtradas);
+    } catch (error) {
+      console.error("Error al cargar ventas:", error);
+    }
   };
-  // Llamada a la función para obtener los datos cuando el componente se monta
+
   useEffect(() => {
-    compras();
+    fetchVentas();
   }, []);
 
-  //state que controla el modal
-  const [openModal, setOpenModal] = useState(false);
-
-  //state que abre el modal junto con la data del id seleccionado
-  const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
-  const handleAbrirModal = (venta) => {
-    setVentaSeleccionada(venta);
-    setOpenModal(true);
+  const handleGenerarDespacho = (venta) => {
+    setSelectedVenta(venta);
+    setIsModalOpen(true);
   };
 
   return (
-    <>
-      <section className="grid text-center grid-cols-12 mb-8">
-        <div className="col-span-12 flex justify-center">
-          <div className="col-span-10 p-2 bg-white border border-gray-200 rounded-lg shadow dark:bg-white h-full overflow-hidden">
-            <table className="table-fixed">
-              <thead>
-                <tr className="py-10">
-                  <th className="pr-10">Orden de compra</th>
-                  <th className="pr-10">direccion</th>
-                  <th className="pr-10">fecha de compra</th>
-                  <th className="pr-10">valor total</th>
-                  <th className="pr-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {ventas
-                  .filter((venta) => !venta.despachoGenerado)
-                  .map((venta) => (
-                    <tr key={venta.idVenta}>
-                      <td className="pr-10 py-10 items-center">
-                        {venta.idVenta}
-                      </td>
-                      <td className="pr-10 py-10  items-center">
-                        {venta.direccionCompra}
-                      </td>
-                      <td className="pr-10 py-10  items-center">
-                        {venta.fechaCompra}
-                      </td>
-                      <td className="pr-10 py-10  items-center">
-                        ${venta.valorCompra}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => handleAbrirModal(venta)}
-                          className="py-1 bg-orange-200 px-8 rounded-xl shadow-md hover:bg-orange-300/70 transition-all duration-300 "
-                        >
-                          Generar Despacho
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+    <div className="p-4 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Compras sin Despacho</h2>
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Venta</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dirección</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {ventas.map((venta) => (
+            <tr key={venta.id}>
+              <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{venta.id}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-gray-500">{venta.direccionCompra}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-gray-500">{new Date(venta.fechaCompra).toLocaleDateString()}</td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <button
+                  onClick={() => handleGenerarDespacho(venta)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                >
+                  Generar Despacho
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {isModalOpen && selectedVenta && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg max-w-md w-full relative">
+            <button 
+              onClick={() => setIsModalOpen(false)} 
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 font-bold"
+            >
+              ✕
+            </button>
+            <FormDespacho 
+              venta={selectedVenta} 
+              onClose={() => {
+                setIsModalOpen(false);
+                fetchVentas();
+              }} 
+            />
           </div>
         </div>
-      </section>
-      <Modal
-        onClose={() => {
-          setOpenModal(false);
-        }}
-        open={openModal}
-      >
-        {ventaSeleccionada && (
-          <FormDespacho
-            venta={ventaSeleccionada}
-            onClose={() => {
-              //onclose es un prop que pasa funciones al modal con el form abierto, por ende al cerrarse, se ejecutan esas 2 funciones
-              setOpenModal(false), compras();
-            }}
-          />
-        )}
-      </Modal>
-    </>
+      )}
+    </div>
   );
 };

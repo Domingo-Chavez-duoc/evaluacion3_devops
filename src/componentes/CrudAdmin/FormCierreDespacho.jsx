@@ -1,135 +1,85 @@
-import { useForm } from "react-hook-form";
-import Swal from "sweetalert2";
-import axios from "axios";
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 export const FormCierreDespacho = ({ despacho, onClose }) => {
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit } = useForm({
+    defaultValues: {
+      intento: despacho.intento || 1,
+      despachado: despacho.despachado || false
+    }
+  });
 
   const onSubmit = async (data) => {
-    console.log("onSubmit ejecutado");
-    const jsonData = {
-      intento: data.intento,
-      despachado: data.despachado,
-    };
-
-    console.log("Datos del formulario:", jsonData);
-
     try {
-      await axios.put(
-        `http://192.168.320/api/v1/despachos/${despacho.idDespacho}`,
-        jsonData,
-        {
-          headers:{
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-      }
-        }
-      );
-      Swal.fire({
-        title: "Despacho modificado 🛻!",
-        text: "El despacho ha sido modificado exitosamente",
-        icon: "success",
-        confirmButtonText: "Aceptar",
+      const id = despacho.idDespacho || despacho.id;
+      
+      // Corrección 4.1 y 4.5: URL limpia y envío de parámetros consistentes
+      await axios.put(`${import.meta.env.VITE_API_DESPACHOS}/${id}`, {
+        ...despacho,
+        intento: parseInt(data.intento),
+        despachado: data.despachado === "true" || data.despachado === true
       });
+
+      Swal.fire({
+        title: '¡Actualizado!',
+        text: 'El estado del despacho ha sido modificado.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar'
+      });
+
+      onClose();
     } catch (error) {
-      console.error("Error en la solicitud:", error);
+      console.error("Error al cerrar despacho:", error);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo actualizar el despacho.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
     }
-    onClose();
   };
 
   return (
-    <>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col justify-center text-center px-24 text-xl"
-      >
-        <div className="mx-auto text-3xl font-bold mb-10 text-teal-600">
-          Editar y cierre de despacho
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">ID despacho</label>
-          <input
-            disabled={true}
-            type="text"
-            placeholder="Ingresa fecha de despacho"
-            className="border border-gray-300 rounded-lg block w-full p-1 text-slate-400"
-            value={despacho.idDespacho}
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Fecha despacho</label>
-          <input
-            type="date"
-            placeholder="Elige patente de camión"
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-            value={despacho.fechaDespacho}
-            disabled={true}
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Patente Camión</label>
-          <input
-            type="text"
-            disabled={true}
-            value={despacho.patenteCamion}
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Intentos de entrega</label>
-          <input
-            type="number"
-            defaultValue={despacho.intento}
-            className="border border-gray-300 rounded-lg block w-full  p-1"
-            {...register("intento", { required: true })}
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Despacho entregado</label>
-          <select
-            defaultValue={false}
-            className="border border-gray-300 rounded-lg block w-full  p-1"
-            {...register("despachado", { required: true })}
-          >
-            <option value={false}>Despacho abierto</option>
-            <option value={true}>Cerrar despacho</option>
-          </select>
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">ID Compra</label>
-          <input
-            type="text"
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-            disabled={true}
-            value={despacho.idCompra}
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Dirección Compra</label>
-          <input
-            type="text"
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-            disabled={true}
-            value={despacho.direccionCompra}
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block font-bold mb-2">Valor Compra</label>
-          <input
-            type="text"
-            className="border border-gray-300 rounded-lg block w-full text-slate-400 p-1"
-            disabled={true}
-            value={despacho.valorCompra}
-          />
-        </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <h3 className="text-lg font-bold text-gray-900">Cerrar Despacho #{despacho.idDespacho || despacho.id}</h3>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Número de Intentos</label>
+        <input
+          type="number"
+          {...register('intento')}
+          className="mt-1 block w-full border border-gray-300 rounded p-2 focus:ring-orange-500 focus:border-orange-500"
+        />
+      </div>
 
-        <button
-          className="py-6 px-14 rounded-lg bg-teal-600 text-white font-bold mb-14"
-          type="submit"
+      <div>
+        <label className="block text-sm font-medium text-gray-700">¿Fue entregado con éxito?</label>
+        <select
+          {...register('despachado')}
+          className="mt-1 block w-full border border-gray-300 rounded p-2 focus:ring-orange-500 focus:border-orange-500"
         >
-          Modificar Despacho
+          <option value="false">No, sigue pendiente / fallido</option>
+          <option value="true">Sí, despachado con éxito</option>
+        </select>
+      </div>
+
+      <div className="flex justify-end space-x-2 pt-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="bg-gray-300 px-4 py-2 rounded text-gray-700 hover:bg-gray-400 transition-colors"
+        >
+          Cancelar
         </button>
-      </form>
-    </>
+        <button
+          type="submit"
+          className="bg-orange-600 px-4 py-2 rounded text-white hover:bg-orange-700 transition-colors"
+        >
+          Guardar Cambios
+        </button>
+      </div>
+    </form>
   );
 };
