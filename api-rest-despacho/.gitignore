@@ -1,17 +1,9 @@
-# folders
-.mvn/
-# files
-.DS_Store
-# folders
-docs/
-# files
-terraform.tfvars
-terraform.tfstate
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
 .env
 
 ### STS ###
