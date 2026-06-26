@@ -6,9 +6,9 @@ import com.citt.persistence.entity.Venta;
 import java.util.List;
 
 public interface VentaService {
-    List<Venta> findAllVentas();
-    Venta saveVenta(Venta venta);
+    List<Venta> getAllVentas();
+    Venta createVenta(Venta venta);
     Venta updateVenta(Long idVenta, Venta venta) throws VentaNotFoundException;
     void deleteVenta(Long idVenta) throws VentaNotFoundException;
-    Venta findById(Long idVenta) throws VentaNotFoundException;
+    Venta getVentaById(Long idVenta) throws VentaNotFoundException;
 }
