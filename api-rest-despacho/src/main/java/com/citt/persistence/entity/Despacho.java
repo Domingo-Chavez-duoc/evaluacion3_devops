@@ -1,32 +1,28 @@
 package com.citt.persistence.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDate;
-
-@Entity
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Entity
+@Table(name = "despachos")
 public class Despacho {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idDespacho;
-    //@NotNull(message = "Fecha de despacho es obligatoria")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)  // Especifica el formato de fecha
-    private LocalDate fechaDespacho;
-    private String patenteCamion;
-    private int intento;
-    private Long idCompra;
-    //@NotBlank(message = "La dirección es obligatoria")
-    private String direccionCompra;
-    private Long valorCompra;
-    private boolean despachado = false;
+
+    @NotNull(message = "El ID de la venta no puede ser nulo")
+    private Long idVenta;
+
+    @NotBlank(message = "La dirección de envío no puede estar vacía")
+    private String direccion;
+
+    // Corrección 4.4: Cambiado de @NotBlank a @NotNull para tipos Boolean
+    @NotNull(message = "El estado despachado es obligatorio")
+    private Boolean despachado = false;
+
+    private Integer intento = 1;
 }
