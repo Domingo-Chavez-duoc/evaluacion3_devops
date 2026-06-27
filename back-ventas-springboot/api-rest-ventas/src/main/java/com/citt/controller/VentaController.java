@@ -25,14 +25,21 @@ public class VentaController {
 
     @Operation(summary = "Crear una nueva venta", description = "Crea una nueva venta en el sistema")
     @PostMapping
-    public ResponseEntity<Venta> crearVenta(@Valid @RequestBody Venta venta){
+    public ResponseEntity<Venta> crearVenta(@Valid @RequestBody Venta venta) {
+    
+    // 1. PRIMERO guardamos la venta en la base de datos para que se le asigne un ID
+        Venta nuevaVenta = ventaService.createVenta(venta);
+    
+    // 2. DESPUÉS construimos la URI usando el ID de la venta recién guardada.
+    // Nota: Cambia "getId()" por "getIdVenta()" si así se llama el atributo en tu clase Venta.
         URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{idVenta}")
-                .buildAndExpand(venta.getIdVenta())
-                .toUri();
-        ventaService.saveVenta(venta);
-        return ResponseEntity.created(location).body(venta);
+            .fromCurrentRequest()
+            .path("/{idVenta}")
+            .buildAndExpand(nuevaVenta.getId()) 
+            .toUri();
+            
+    // 3. Retornamos la respuesta
+        return ResponseEntity.created(location).body(nuevaVenta);
     }
 
     @PutMapping("/{idVenta}")
@@ -45,13 +52,13 @@ public class VentaController {
     @GetMapping
     @Operation(summary = "Obtener todas las ventas", description = "Devuelve una lista de todas las ventas")
     public ResponseEntity<List<Venta>> getVentas(){
-        return ResponseEntity.ok(ventaService.findAllVentas());
+        return ResponseEntity.ok(ventaService.getAllVentas());
     }
 
     @GetMapping("/{idVenta}")
     @Operation(summary = "Obtener una venta por ID", description = "Devuelve los detalles de una venta específica")
     public ResponseEntity<Venta> obtenerVenta(@PathVariable Long idVenta) throws VentaNotFoundException {
-        Venta venta = ventaService.findById(idVenta);
+        Venta venta = ventaService.getVentaById(idVenta);
         return ResponseEntity.ok(venta); // Retornamos la venta encontrada con un estado 200 (OK)
     }
 

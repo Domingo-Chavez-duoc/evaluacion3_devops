@@ -3,6 +3,8 @@ package com.citt.persistence.services;
 import com.citt.persistence.entity.Venta;
 import com.citt.persistence.repository.VentaRepository;
 import com.citt.exceptions.VentaNotFoundException;
+
+import org.apache.el.stream.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +30,7 @@ public class VentaServiceImpl implements VentaService {
     @Override
     public Venta getVentaById(Long id) {
         return ventaRepository.findById(id)
-                .orElseThrow(() -> new VentaNotFoundException("Venta no encontrada con id: " + id));
+            .orElseThrow(() -> new RuntimeException("Venta no encontrada con el ID: " + id));
     }
 
     @Override
