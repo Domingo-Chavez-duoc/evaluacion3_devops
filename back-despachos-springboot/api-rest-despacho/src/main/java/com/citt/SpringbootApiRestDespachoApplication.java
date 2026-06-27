@@ -1,14 +1,12 @@
 package com.citt;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootTest
-@ActiveProfiles("test") // Corrección 4.2: Activar perfil de base de datos H2
-class SpringbootApiRestDespachoApplicationTests {
+@SpringBootApplication
+public class SpringbootApiRestDespachoApplication {
 
-    @Test
-    void contextLoads() {
+    public static void main(String[] args) {
+        SpringApplication.run(SpringbootApiRestDespachoApplication.class, args);
     }
 }
