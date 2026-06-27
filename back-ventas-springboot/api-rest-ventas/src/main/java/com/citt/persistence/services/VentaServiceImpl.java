@@ -28,7 +28,7 @@ public class VentaServiceImpl implements VentaService {
     @Override
     public Venta getVentaById(Long id) {
         return ventaRepository.findById(id)
-                .orElseThrow(() -> new VentaNotFoundException("Venta no encontrada con id: " + id));
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada con id: " + id));
     }
 
     @Override
