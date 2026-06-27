@@ -1,32 +1,41 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: innovatech
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tienda-db
-  namespace: tienda
+  name: mysql
+  namespace: innovatech
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tienda-db
+      app: mysql
   template:
     metadata:
       labels:
-        app: tienda-db
+        app: mysql
     spec:
       containers:
         - name: mysql
-          image: 637083690819.dkr.ecr.us-east-1.amazonaws.com/tienda-db:eks-v1 # Colocar uri de tu imagen en ECR
+          image: mysql:8.0
           ports:
             - containerPort: 3306
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: MYSQL_ROOT_PASSWORD
+          envFrom:
+            - secretRef:
+                name: mysql-secret
           volumeMounts:
-            - name: data
+            - name: mysql-data
               mountPath: /var/lib/mysql
       volumes:
-        - name: data
-          emptyDir: {}
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-pvc

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend-svc
+  name: backend-despachos-svc
   namespace: innovatech
 spec:
   selector:
-    app: frontend
+    app: backend-despachos
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 8081
+      targetPort: 8081
   type: ClusterIP

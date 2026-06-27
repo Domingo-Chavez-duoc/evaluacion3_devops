@@ -1,19 +1,19 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: tienda-backend-hpa
-  namespace: tienda
+  name: hpa-backend-despachos
+  namespace: innovatech
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: tienda-backend
+    name: backend-despachos
   minReplicas: 2
-  maxReplicas: 10
+  maxReplicas: 5
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70
+          averageUtilization: 50

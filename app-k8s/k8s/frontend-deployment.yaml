@@ -1,45 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tienda-frontend
-  namespace: tienda
+  name: frontend
+  namespace: innovatech
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: tienda-frontend
+      app: frontend
   template:
     metadata:
       labels:
-        app: tienda-frontend
+        app: frontend
     spec:
       containers:
         - name: frontend
-          image: 637083690819.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:eks-v1 # Colocar uri de tu imagen en ECR
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/innovatech/frontend:latest
           ports:
             - containerPort: 80
-
-          # Se agrega Resource para que Metrics Server calcule el % de CPU y Memoria para escalar 
           resources:
             requests:
-              cpu: "50m"
-              memory: "64Mi"
+              cpu: "100m"
+              memory: "128Mi"
             limits:
-              cpu: "300m"
+              cpu: "250m"
               memory: "256Mi"
-
-          # HEALTH CHECKS
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 3
-            periodSeconds: 5
-
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
 

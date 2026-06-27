@@ -1,19 +1,79 @@
-name: CI/CD Tienda Perritos EKS
+name: CI/CD — Innovatech EKS
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: {}
+    branches: [main]
 
 env:
-  # Repos de ECR (no son secretos, solo nombres)
-  ECR_REPO_FRONTEND: tienda-frontend
-  ECR_REPO_BACKEND: tienda-backend
-  ECR_REPO_DB: tienda-db
+  AWS_REGION: us-east-1
+  EKS_CLUSTER: innovatech-cluster
 
 jobs:
-  build-and-deploy:
+  # ─── BUILD & PUSH ────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push to ECR
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Generar tag de imagen
+        id: tag
+        run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login a Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push — backend-despachos
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/innovatech/backend-despachos:$TAG \
+                       -t $ECR_REGISTRY/innovatech/backend-despachos:latest \
+                       ./backend-despachos
+          docker push $ECR_REGISTRY/innovatech/backend-despachos:$TAG
+          docker push $ECR_REGISTRY/innovatech/backend-despachos:latest
+
+      - name: Build & Push — backend-ventas
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/innovatech/backend-ventas:$TAG \
+                       -t $ECR_REGISTRY/innovatech/backend-ventas:latest \
+                       ./backend-ventas
+          docker push $ECR_REGISTRY/innovatech/backend-ventas:$TAG
+          docker push $ECR_REGISTRY/innovatech/backend-ventas:latest
+
+      - name: Build & Push — frontend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/innovatech/frontend:$TAG \
+                       -t $ECR_REGISTRY/innovatech/frontend:latest \
+                       ./frontend
+          docker push $ECR_REGISTRY/innovatech/frontend:$TAG
+          docker push $ECR_REGISTRY/innovatech/frontend:latest
+
+  # ─── DEPLOY ──────────────────────────────────────────────────────
+  deploy:
+    name: Deploy a EKS
+    runs-on: ubuntu-latest
+    needs: build-and-push
 
     steps:
       - name: Checkout código
@@ -24,109 +84,54 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login a Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Definir tag de imagen
-        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
-      # ---------- FRONTEND ----------
-      - name: Build & push FRONTEND
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          cd app-k8s/frontend
-          docker build -t $ECR_REGISTRY/${ECR_REPO_FRONTEND}:${IMAGE_TAG} .
-          docker push $ECR_REGISTRY/${ECR_REPO_FRONTEND}:${IMAGE_TAG}
-
-      # ---------- BACKEND ----------
-      - name: Build & push BACKEND
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          cd app-k8s/backend
-          docker build -t $ECR_REGISTRY/${ECR_REPO_BACKEND}:${IMAGE_TAG} .
-          docker push $ECR_REGISTRY/${ECR_REPO_BACKEND}:${IMAGE_TAG}
-
-      # ---------- DB (opcional) ----------
-      - name: Build & push DB
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          cd app-k8s/db
-          docker build -t $ECR_REGISTRY/${ECR_REPO_DB}:${IMAGE_TAG} .
-          docker push $ECR_REGISTRY/${ECR_REPO_DB}:${IMAGE_TAG}
-
-      # ---------- Instalar kubectl ----------
-      - name: Instalar kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: v1.29.0
-
-      # ---------- Configurar kubeconfig de EKS ----------
-      - name: Configurar kubeconfig para EKS
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+      - name: Configurar kubectl para EKS
         run: |
           aws eks update-kubeconfig \
-            --region $AWS_REGION \
-            --name $EKS_CLUSTER_NAME
-          kubectl config current-context
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER }}
 
-      # ---------- Aplicar manifests base ----------
-      - name: Aplicar manifests base (namespace, DB, servicios)
-        env:
-          EKS_NAMESPACE: ${{ secrets.EKS_NAMESPACE }}
+      - name: Aplicar manifests de Kubernetes
         run: |
           kubectl apply -f app-k8s/k8s/namespace.yaml
-          kubectl apply -f app-k8s/k8s/mysql-secret.yaml -n $EKS_NAMESPACE
-          kubectl apply -f app-k8s/k8s/mysql-deployment.yaml -n $EKS_NAMESPACE
-          kubectl apply -f app-k8s/k8s/mysql-service.yaml -n $EKS_NAMESPACE
+          kubectl apply -f app-k8s/k8s/mysql-secret.yaml
+          kubectl apply -f app-k8s/k8s/mysql-deployment.yaml
+          kubectl apply -f app-k8s/k8s/mysql-service.yaml
+          kubectl apply -f app-k8s/k8s/backend-despachos-deployment.yaml
+          kubectl apply -f app-k8s/k8s/backend-despachos-service.yaml
+          kubectl apply -f app-k8s/k8s/backend-despachos-hpa.yaml
+          kubectl apply -f app-k8s/k8s/backend-ventas-deployment.yaml
+          kubectl apply -f app-k8s/k8s/backend-ventas-service.yaml
+          kubectl apply -f app-k8s/k8s/backend-ventas-hpa.yaml
+          kubectl apply -f app-k8s/k8s/frontend-deployment.yaml
+          kubectl apply -f app-k8s/k8s/frontend-service.yaml
+          kubectl apply -f app-k8s/k8s/frontend-hpa.yaml
+          kubectl apply -f app-k8s/k8s/ingress.yaml
 
-      # ---------- Actualizar BACKEND en EKS ----------
-      - name: Actualizar BACKEND en EKS
+      - name: Forzar rollout con nueva imagen
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          EKS_NAMESPACE: ${{ secrets.EKS_NAMESPACE }}
+          TAG: ${{ needs.build-and-push.outputs.image_tag }}
         run: |
-          kubectl apply -f app-k8s/k8s/backend-deployment.yaml -n $EKS_NAMESPACE
-          kubectl apply -f app-k8s/k8s/backend-service.yaml -n $EKS_NAMESPACE
-          kubectl set image deployment/tienda-backend \
-            backend=$ECR_REGISTRY/${ECR_REPO_BACKEND}:${IMAGE_TAG} \
-            -n $EKS_NAMESPACE
-          kubectl rollout status deployment/tienda-backend -n $EKS_NAMESPACE
+          kubectl set image deployment/backend-despachos \
+            backend-despachos=${{ secrets.ECR_REGISTRY }}/innovatech/backend-despachos:$TAG \
+            -n innovatech
+          kubectl set image deployment/backend-ventas \
+            backend-ventas=${{ secrets.ECR_REGISTRY }}/innovatech/backend-ventas:$TAG \
+            -n innovatech
+          kubectl set image deployment/frontend \
+            frontend=${{ secrets.ECR_REGISTRY }}/innovatech/frontend:$TAG \
+            -n innovatech
 
-      # ---------- Actualizar FRONTEND en EKS ----------
-      - name: Actualizar FRONTEND en EKS
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          EKS_NAMESPACE: ${{ secrets.EKS_NAMESPACE }}
+      - name: Verificar rollout
         run: |
-          kubectl apply -f app-k8s/k8s/frontend-deployment.yaml -n $EKS_NAMESPACE
-          kubectl apply -f app-k8s/k8s/frontend-service.yaml -n $EKS_NAMESPACE
-          kubectl set image deployment/tienda-frontend \
-            frontend=$ECR_REGISTRY/${ECR_REPO_FRONTEND}:${IMAGE_TAG} \
-            -n $EKS_NAMESPACE
-          kubectl rollout status deployment/tienda-frontend -n $EKS_NAMESPACE
+          kubectl rollout status deployment/backend-despachos -n innovatech --timeout=120s
+          kubectl rollout status deployment/backend-ventas -n innovatech --timeout=120s
+          kubectl rollout status deployment/frontend -n innovatech --timeout=120s
 
-      # ---------- HPA (si existen los YAML) ----------
-      - name: Aplicar HPA (opcional)
-        env:
-          EKS_NAMESPACE: ${{ secrets.EKS_NAMESPACE }}
+      - name: Obtener URL pública (ALB)
         run: |
-          if [ -f app-k8s/k8s/backend-hpa.yaml ]; then kubectl apply -f app-k8s/k8s/backend-hpa.yaml -n $EKS_NAMESPACE; fi
-          if [ -f app-k8s/k8s/frontend-hpa.yaml ]; then kubectl apply -f app-k8s/k8s/frontend-hpa.yaml -n $EKS_NAMESPACE; fi
-
-      # ---------- Ver estado final ----------
-      - name: Ver pods y servicios
-        env:
-          EKS_NAMESPACE: ${{ secrets.EKS_NAMESPACE }}
-        run: |
-          kubectl get pods -n $EKS_NAMESPACE
-          kubectl get svc -n $EKS_NAMESPACE
-          kubectl get hpa -n $EKS_NAMESPACE || true
+          echo "=== URL del Ingress ==="
+          kubectl get ingress -n innovatech
+          kubectl get pods -n innovatech
