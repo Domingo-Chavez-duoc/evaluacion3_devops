@@ -12,14 +12,14 @@ spec:
   rules:
     - http:
         paths:
-          - path: /api/despachos
+          - path: /api/v1/despachos
             pathType: Prefix
             backend:
               service:
                 name: backend-despachos-svc
                 port:
                   number: 8081
-          - path: /api/ventas
+          - path: /api/v1/ventas
             pathType: Prefix
             backend:
               service:

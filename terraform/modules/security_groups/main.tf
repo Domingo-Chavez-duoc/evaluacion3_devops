@@ -109,11 +109,21 @@ resource "aws_security_group_rule" "nodes_http_ingress" {
   security_group_id = aws_security_group.sg_nodes.id
 }
 
-resource "aws_security_group_rule" "nodes_backend_ingress" {
-  description       = "Backend API port (NodeJS) from VPC"
+resource "aws_security_group_rule" "nodes_backend_despachos_ingress" {
+  description       = "Backend despachos (Spring Boot 8081) from VPC"
   type              = "ingress"
-  from_port         = 3001
-  to_port           = 3001
+  from_port         = 8081
+  to_port           = 8081
+  protocol          = "tcp"
+  cidr_blocks       = [var.vpc_cidr]
+  security_group_id = aws_security_group.sg_nodes.id
+}
+
+resource "aws_security_group_rule" "nodes_backend_ventas_ingress" {
+  description       = "Backend ventas (Spring Boot 8082) from VPC"
+  type              = "ingress"
+  from_port         = 8082
+  to_port           = 8082
   protocol          = "tcp"
   cidr_blocks       = [var.vpc_cidr]
   security_group_id = aws_security_group.sg_nodes.id

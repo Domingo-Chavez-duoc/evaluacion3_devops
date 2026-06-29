@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/innovatech/frontend:latest
+          image: PLACEHOLDER_FRONTEND
           ports:
             - containerPort: 80
           resources:
@@ -25,4 +25,10 @@ spec:
             limits:
               cpu: "250m"
               memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
 

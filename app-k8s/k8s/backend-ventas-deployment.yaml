@@ -15,22 +15,35 @@ spec:
     spec:
       containers:
         - name: backend-ventas
-          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/innovatech/backend-ventas:latest
+          image: PLACEHOLDER_VENTAS
           ports:
             - containerPort: 8082
           env:
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://mysql-svc:3306/innovatech?useSSL=false&allowPublicKeyRetrieval=true"
-            - name: SPRING_DATASOURCE_USERNAME
+            - name: DB_ENDPOINT
               valueFrom:
                 secretKeyRef:
                   name: mysql-secret
-                  key: MYSQL_USER
-            - name: SPRING_DATASOURCE_PASSWORD
+                  key: DB_ENDPOINT
+            - name: DB_PORT
               valueFrom:
                 secretKeyRef:
                   name: mysql-secret
-                  key: MYSQL_PASSWORD
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_NAME
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PASSWORD
           resources:
             requests:
               cpu: "250m"
@@ -39,8 +52,12 @@ spec:
               cpu: "500m"
               memory: "1Gi"
           readinessProbe:
-            httpGet:
-              path: /actuator/health
+            tcpSocket:
               port: 8082
             initialDelaySeconds: 30
             periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 20

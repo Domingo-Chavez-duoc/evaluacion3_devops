@@ -4,7 +4,8 @@ metadata:
   name: mysql-pvc
   namespace: innovatech
 spec:
-  accessModes: [ReadWriteOnce]
+  accessModes:
+    - ReadWriteOnce
   resources:
     requests:
       storage: 5Gi
@@ -29,13 +30,37 @@ spec:
           image: mysql:8.0
           ports:
             - containerPort: 3306
-          envFrom:
-            - secretRef:
-                name: mysql-secret
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "yes"
+          # Crea ambas bases de datos al iniciar
+          args:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
           volumeMounts:
             - name: mysql-data
               mountPath: /var/lib/mysql
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d
       volumes:
         - name: mysql-data
           persistentVolumeClaim:
             claimName: mysql-pvc
+        - name: mysql-init
+          configMap:
+            name: mysql-initdb
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-initdb
+  namespace: innovatech
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS db_despachos;
+    CREATE DATABASE IF NOT EXISTS db_ventas;

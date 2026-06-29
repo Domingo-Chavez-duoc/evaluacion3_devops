@@ -15,22 +15,26 @@ spec:
     spec:
       containers:
         - name: backend-despachos
-          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/innovatech/backend-despachos:latest
+          # CI/CD reemplazará este valor con la imagen real de ECR
+          image: PLACEHOLDER_DESPACHOS
           ports:
             - containerPort: 8081
           env:
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://mysql-svc:3306/innovatech?useSSL=false&allowPublicKeyRetrieval=true"
-            - name: SPRING_DATASOURCE_USERNAME
+            - name: DB_URL
               valueFrom:
                 secretKeyRef:
                   name: mysql-secret
-                  key: MYSQL_USER
-            - name: SPRING_DATASOURCE_PASSWORD
+                  key: DB_URL
+            - name: DB_USER
               valueFrom:
                 secretKeyRef:
                   name: mysql-secret
-                  key: MYSQL_PASSWORD
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PASS
           resources:
             requests:
               cpu: "250m"
@@ -38,9 +42,14 @@ spec:
             limits:
               cpu: "500m"
               memory: "1Gi"
+          # Sin Actuator usamos TCP simple
           readinessProbe:
-            httpGet:
-              path: /actuator/health
+            tcpSocket:
               port: 8081
             initialDelaySeconds: 30
             periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 20

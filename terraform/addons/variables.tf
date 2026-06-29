@@ -14,7 +14,7 @@ variable "region" {
 variable "cluster_name" {
   description = "Name of the EKS cluster. Must match var.cluster_name in the sibling cluster/ root."
   type        = string
-  default     = "tienda-eks"
+  default     = "innovatech-eks"          # ← era tienda-eks
 }
 
 variable "common_tags" {

@@ -69,7 +69,7 @@ variable "enable_dns_hostnames" {
 variable "cluster_name" {
   description = "Name of the EKS cluster"
   type        = string
-  default     = "tienda-eks"
+  default     = "innovatech-eks"          # ← era tienda-eks
 }
 
 variable "cluster_version" {
@@ -115,9 +115,13 @@ variable "node_max_size" {
 }
 
 variable "ecr_repo_names" {
-  description = "Names of ECR repositories to create for the Tienda application"
+  description = "Names of ECR repositories to create for Innovatech"
   type        = list(string)
-  default     = ["tienda-frontend", "tienda-backend", "tienda-db"]
+  default     = [                          # ← eran tienda-*
+    "innovatech/frontend",
+    "innovatech/backend-despachos",
+    "innovatech/backend-ventas"
+  ]
 }
 
 variable "common_tags" {
