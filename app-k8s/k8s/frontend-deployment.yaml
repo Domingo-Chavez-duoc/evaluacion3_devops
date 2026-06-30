@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: PLACEHOLDER_FRONTEND
+          image: 836626137299.dkr.ecr.us-east-1.amazonaws.com/innovatech/frontend:latest
           ports:
             - containerPort: 80
           resources:

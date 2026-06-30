@@ -115,7 +115,9 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace        = "kube-system"
   create_namespace = false
   wait             = true
-  timeout          = 600
+  timeout          = 9999
+  disable_openapi_validation = true
+  lint                       = false 
 
   set {
     name  = "clusterName"

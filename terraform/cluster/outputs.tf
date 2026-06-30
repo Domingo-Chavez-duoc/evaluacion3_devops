@@ -62,3 +62,8 @@ output "ecr_login_command" {
   description = "Command to authenticate Docker with ECR"
   value       = "aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
 }
+
+output "ecr_registry_base" {
+  description = "Base URL del registry ECR para usar en docker push"
+  value       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
+}

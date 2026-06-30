@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend-ventas
-          image: PLACEHOLDER_VENTAS
+          image: 836626137299.dkr.ecr.us-east-1.amazonaws.com/innovatech/backend-ventas:latest
           ports:
             - containerPort: 8082
           env:
